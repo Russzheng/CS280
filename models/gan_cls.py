@@ -4,6 +4,7 @@ from torch.autograd import Variable
 import numpy as np
 from utils import Concat_embed
 import pdb
+from SelfAttention import Self_Attn
 
 def conv3x3(in_planes, out_planes, stride=1):
     "3x3 convolution with padding"
@@ -49,6 +50,9 @@ class generator(nn.Module):
         self.projected_embed_dim = 128
         self.latent_dim = self.noise_dim + self.projected_embed_dim
         self.ngf = 64
+
+        self.attn1 = Self_Attn(128, 'relu')
+        self.attn2 = Self_Attn(64, 'relu')
 
         self.projection = nn.Sequential(
             nn.Linear(in_features=self.embed_dim, out_features=self.projected_embed_dim),
@@ -98,10 +102,15 @@ class generator(nn.Module):
             nn.ConvTranspose2d(self.ngf * 4, self.ngf * 2, 4, 2, 1, bias=True),
             nn.BatchNorm2d(self.ngf * 2),
             nn.ReLU(True),
+
+            self.attn1(self.ngf*2),
+
             # state size. (ngf*2) x 16 x 16
             nn.ConvTranspose2d(self.ngf * 2,self.ngf, 4, 2, 1, bias=True),
             nn.BatchNorm2d(self.ngf),
             nn.ReLU(True),
+
+            self.attn2(self.ngf)
             # state size. (ngf) x 32 x 32
             nn.ConvTranspose2d(self.ngf, self.num_channels, 4, 2, 1, bias=True),
             nn.Tanh()

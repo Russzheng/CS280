@@ -17,6 +17,9 @@ fitures/*
 *.zip
 *.swp
 
+# MAC OS X
+.DS_Store
+
 # C extensions
 *.so
 
