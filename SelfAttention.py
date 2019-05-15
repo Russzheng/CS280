@@ -1,3 +1,6 @@
+import torch.nn as nn
+import torch
+
 class Self_Attn(nn.Module):
     """ Self Attention Layer"""
     def __init__(self, in_dim, activation):
@@ -31,4 +34,4 @@ class Self_Attn(nn.Module):
         out = out.view(N, C, H, W)
 
         out = self.gamma * out + x
-        return out, attention
+        return out#, attention

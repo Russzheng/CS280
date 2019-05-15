@@ -51,8 +51,8 @@ class generator(nn.Module):
         self.latent_dim = self.noise_dim + self.projected_embed_dim
         self.ngf = 64
 
-        self.attn1 = Self_Attn(128, 'relu')
-        self.attn2 = Self_Attn(64, 'relu')
+        self.attn1 = Self_Attn(self.ngf*2, 'relu')
+        self.attn2 = Self_Attn(self.ngf, 'relu')
 
         self.projection = nn.Sequential(
             nn.Linear(in_features=self.embed_dim, out_features=self.projected_embed_dim),
@@ -103,14 +103,14 @@ class generator(nn.Module):
             nn.BatchNorm2d(self.ngf * 2),
             nn.ReLU(True),
 
-            self.attn1(self.ngf*2),
+            self.attn1,
 
             # state size. (ngf*2) x 16 x 16
             nn.ConvTranspose2d(self.ngf * 2,self.ngf, 4, 2, 1, bias=True),
             nn.BatchNorm2d(self.ngf),
             nn.ReLU(True),
 
-            self.attn2(self.ngf)
+            self.attn2,
             # state size. (ngf) x 32 x 32
             nn.ConvTranspose2d(self.ngf, self.num_channels, 4, 2, 1, bias=True),
             nn.Tanh()
