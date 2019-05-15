@@ -11,6 +11,9 @@ class generator(nn.Module):
 		self.noise_dim = 100
 		self.ngf = 64
 
+		self.attn1 = Self_Attn(self.ngf*2, 'relu')
+        self.attn2 = Self_Attn(self.ngf, 'relu')
+
 		# based on: https://github.com/pytorch/examples/blob/master/dcgan/main.py
 		self.netG = nn.Sequential(
 			nn.ConvTranspose2d(self.noise_dim, self.ngf * 8, 4, 1, 0, bias=False),
@@ -24,10 +27,16 @@ class generator(nn.Module):
 			nn.ConvTranspose2d(self.ngf * 4, self.ngf * 2, 4, 2, 1, bias=False),
 			nn.BatchNorm2d(self.ngf * 2),
 			nn.ReLU(True),
+
+			self.attn1,
+
 			# state size. (ngf*2) x 16 x 16
-			nn.ConvTranspose2d(self.ngf * 2,self.ngf, 4, 2, 1, bias=False),
+			nn.ConvTranspose2d(self.ngf * 2, self.ngf, 4, 2, 1, bias=False),
 			nn.BatchNorm2d(self.ngf),
 			nn.ReLU(True),
+
+			self.attn2,
+
 			# state size. (ngf) x 32 x 32
 			nn.ConvTranspose2d(self.ngf, self.num_channels, 4, 2, 1, bias=False),
 			nn.Tanh()
