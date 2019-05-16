@@ -4,7 +4,8 @@ from torch.autograd import Variable
 import numpy as np
 from utils import Concat_embed
 import pdb
-from SelfAttention import Self_Attn
+# from SelfAttention import Self_Attn
+from GlobalAttention import GlobalAttentionGeneral as ATT_NET
 
 def conv3x3(in_planes, out_planes, stride=1):
     "3x3 convolution with padding"
@@ -51,14 +52,13 @@ class generator(nn.Module):
         self.latent_dim = self.noise_dim + self.projected_embed_dim
         self.ngf = 64
 
-        self.attn1 = Self_Attn(self.ngf*2, 'relu')
-        self.attn2 = Self_Attn(self.ngf, 'relu')
-
         self.projection = nn.Sequential(
             nn.Linear(in_features=self.embed_dim, out_features=self.projected_embed_dim),
             nn.BatchNorm1d(num_features=self.projected_embed_dim),
             nn.LeakyReLU(negative_slope=0.2, inplace=True)
             )
+
+        self.att = ATT_NET(self.ngf, self.ef_dim)
 
         # based on: https://github.com/pytorch/examples/blob/master/dcgan/main.py
         self.netG = nn.Sequential(
@@ -97,20 +97,16 @@ class generator(nn.Module):
             nn.BatchNorm2d(self.ngf*4),
             nn.ReLU(True),
 
-
             # state size. (ngf*4) x 8 x 8
             nn.ConvTranspose2d(self.ngf * 4, self.ngf * 2, 4, 2, 1, bias=True),
             nn.BatchNorm2d(self.ngf * 2),
             nn.ReLU(True),
-
-            self.attn1,
 
             # state size. (ngf*2) x 16 x 16
             nn.ConvTranspose2d(self.ngf * 2,self.ngf, 4, 2, 1, bias=True),
             nn.BatchNorm2d(self.ngf),
             nn.ReLU(True),
 
-            self.attn2,
             # state size. (ngf) x 32 x 32
             nn.ConvTranspose2d(self.ngf, self.num_channels, 4, 2, 1, bias=True),
             nn.Tanh()
@@ -128,9 +124,20 @@ class generator(nn.Module):
         if len(z.shape) == 2:
             z = z.unsqueeze(2).unsqueeze(3)
         latent_vector = torch.cat([projected_embed, z], 1)
-        output = self.netG(latent_vector)
+        # output = self.netG(latent_vector)
 
-        return output
+
+        # self.att.applyMask(mask)
+        c_code, att = self.att(latent_vector, projected_embed)
+        h_c_code = torch.cat((latent_vector, c_code), 1)
+        out_code = self.netG(latent_vector)
+        # out_code = self.residual(h_c_code)
+
+        # # state size ngf/2 x 2in_size x 2in_size
+        # out_code = self.upsample(out_code)
+
+
+        return output, att
 
 class discriminator(nn.Module):
     def __init__(self):
